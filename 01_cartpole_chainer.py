@@ -9,6 +9,7 @@ from chainer import Link, Chain, ChainList
 from chainer import optimizers
 import chainer.functions as F
 import chainer.links as L
+from tb_chainer import SummaryWriter
 
 HIDDEN_SIZE = 128
 BATCH_SIZE = 16
@@ -86,6 +87,7 @@ if __name__ == "__main__":
     net.cleargrads()  # zero_grad
     optimizer = optimizers.Adam(alpha=0.01)
     optimizer.setup(net)
+    writer = SummaryWriter(comment="-cartpole")
 
     for iter_no, batch in enumerate(iterate_batches(env, net, BATCH_SIZE)):
         obs_v, acts_v, reward_b, reward_m = filter_batch(batch, PERCENTILE)
@@ -98,7 +100,11 @@ if __name__ == "__main__":
 
         print("%d: loss=%.3f, reward_mean=%.1f, reward_bound=%.1f" % (
             iter_no, loss_v.data, reward_m, reward_b))
+        writer.add_scalar("loss", loss_v.data, iter_no)
+        writer.add_scalar("reward_bound", reward_b, iter_no)
+        writer.add_scalar("reward_mean", reward_m, iter_no)
 
         if reward_m > 199:
             print("Solved!")
             break
+    writer.close()
